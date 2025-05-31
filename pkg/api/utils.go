@@ -55,17 +55,22 @@ func checkDate(task *db.Task) error {
 		return fmt.Errorf(errInvalidDateFormat, dateFormat)
 	}
 
+	// Если дата задачи меньше текущей, обновляем её на сегодня
+	if task.Date < now.Format(dateFormat) {
+		task.Date = now.Format(dateFormat)
+	}
+
 	if task.Repeat != "" {
-		next, err := NextDate(now, task.Date, task.Repeat)
-		if err != nil {
+		if _, err := NextDate(now, task.Date, task.Repeat); err != nil {
 			return fmt.Errorf("%s: %w", errInvalidRepeatRule, err)
 		}
 
-		if now.After(t) {
-			task.Date = next
+		if t.Format(dateFormat) < now.Format(dateFormat) {
+			nextDate, _ := NextDate(now, task.Date, task.Repeat)
+			task.Date = nextDate
 		}
-	} else {
-		if now.After(t) {
+
+		if t.Format(dateFormat) < now.Format(dateFormat) {
 			task.Date = now.Format(dateFormat)
 		}
 	}
